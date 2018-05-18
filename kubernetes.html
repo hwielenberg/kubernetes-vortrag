@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>My Awesome Presentation</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <style type="text/css">
+      @import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
+      @import url(https://fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic);
+      @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+
+      body { font-family: 'Droid Serif'; }
+      h1, h2, h3 {
+        font-family: 'Yanone Kaffeesatz';
+        font-weight: normal;
+      }
+      .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }
+    </style>
+  </head>
+  <body>
+    <textarea id="source">
+
+class: left, middle
+
+# Agenda
+
+1. Vortrag: Einführung in k8s
+2. Hands-On
+3. Fragerunde
+
+---
+# Was kann kubernetes? Was kann es nicht?
+---
+# Was ist ein Pod, Service, Deployment?
+---
+# Redundante Systeme / Replicas
+
+#### Readyness / Liveness Probes
+
+Der _Readyness_ Probe definiert ob der Pod Traffic bekommt, _Liveness_ wird benutzt um festzustellen ob ein Service funktionert.
+
+Können HTTP Checks, oder beliebige Scripte die im Container ausgeführt werden sein:
+```yaml
+readinessProbe:
+  httpGet:
+    port: 8080
+    scheme: HTTP
+    path: /ready.html
+  initialDelaySeconds: 5 # Gibt der Applikation zeit zu starten
+  periodSeconds: 3 # Prüf Intervall
+livenessProbe:
+  httpGet:
+    port: 8080
+    scheme: HTTP
+    path: /basic_status
+  initialDelaySeconds: 5
+  periodSeconds: 3
+```
+
+---
+# Deployment Strategien
+
+#### Recreate
+Simpel: Alle Pods Sterben, bevor neue gestartet werden.
+
+#### Rolling-Update
+"Blue/Green" deployment: neue Pods werden gestartet, warten bis _Readyness_ erfolgt ist, bevor ein alter gelöscht wird.
+
+Über _maxUnavailable_ und _maxSurge_ wird gesteuert Wieviele Pods maximal terminiert werden dürfen, und wieviele maximal zusätzlich gestartet werden können.
+
+Bei einem Deployment mit z.B 3 Replicas, führ ein `maxUnavailable: 0` und `maxSurge: 3` dazu, das immer erst 3 neue Pods gestartet werden, bevor die alten terminiert werden.
+
+Pipeline: `kubectl rollout status deployment/mein-tolles-deployment -w`
+---
+# Ingress, ConfigMaps, Secrets, CronJobs
+---
+# kubernetes config files
+---
+# kubectl CLI
+---
+
+
+    </textarea>
+    <script src="https://remarkjs.com/downloads/remark-latest.min.js" type="text/javascript">
+    </script>
+    <script type="text/javascript">
+      var slideshow = remark.create();
+    </script>
+  </body>
+</html>
