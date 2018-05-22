@@ -114,6 +114,8 @@ Eine VM die u.a. docker images ausführt.
 
 Zur Strukturierung eines Clusters in mehrere Bereiche. Ein Cluster kann z.B. mehrere Umgebungen ausliefern.
 
+Namespaces sollten idealerweise nicht genutzt werden um `dev` und `prod` Umgebungen zu trennen.
+
 ---
 #### Service
 
@@ -343,10 +345,6 @@ Konfiguration wie ein Deployment, Pod wird nach Unix Cron Definition gestartet.
 #### Daemonset
 
 Konfiguration ähnlich zu einem Deployment, Pods werden aber auf allen Nodes des Cluster gestartet.
-
-#### Namespaces
-
-Aufteilung des Cluster in Bereiche für z.B Vertikalen. (Dev/Prod sind idealerweise 2 getrennte Cluster, und nicht Namespaces)
 
 ---
 # Fragerunde
