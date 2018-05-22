@@ -40,33 +40,151 @@ Kubernetes ist ein Container Orchestrierer, und übernimmt dabei funktionen wie:
 - Keine Pipeline für Continous Delivery. -> Gitlab, Jenkins, ...
 - Logging, Monitoring. -> ELK-Stack, Grafana, ...
 
----
-# Was ist ein Pod, Service, Deployment?
 
+---
 #### Pod
 
-Ein `Pod` ist eine Zusammenführung mehrerer Container zu einer gemeinsamen Einheit.
-
-Innerhalb eines Pod können Container über `localhost` miteinander Kommunizieren und sich Dateisysteme teilen.
-
-**TODO Ich würde das erst einmal vereinfachen. Ein pod mit zwei Containern ist ein exotischer Sonderfall**
+Ein Pod ist die kleinste interagierbare Komponente in kubernetes.
 
 Auf Ebene der Pods wird in kubernetes redundante Applikationen abgebildet. Sowohl für Lastverteilung, als auch für Ausfallsicherheit.
 
-Pods werden möglichst so verteilt, das auf einem Host nie 2 gleichzeitig laufen.
+Ein Pod führt ein (oder mehrere) docker images aus.
 
-An die Container eines Pod wird ein Monitoring (Liveness, Readyness) konfigiert, mit der der Zustand und die Verfügbarkeit überwacht wird.
+---
 
+#### Deployment
+
+Über Deployments steuert man die Menge der zur verfügung gestellten Pods, sowie das automatische Update von Container Versionen.
+
+#### Replica Set
+
+Zwischen Deployment und Pod gibt es die zusätzliche Ebene der Replica Set.
+
+Jedes Mal wenn es an der k8s config eine Änderung gibt (z.B. neue image Version) wird ein neues Replica Set erzeugt.
+Für die Dauer der Migrationen der Pods auf den neusten Stand hat ein Deployment zwei Replica Sets.
+
+```
+localhost:~ henning$ kubectl get pods | grep ase-frontend
+
+test-ase-frontend-1058840217-u23m7       1/1       Running             0          44m
+test-ase-frontend-1058840217-xowiu       1/1       Running             0          44m
+...
+test-ase-frontend-1058840217-u23m7       1/1       Running             0          45m
+test-ase-frontend-1058840217-xowiu       1/1       Running             0          44m
+test-ase-frontend-1091542682-xd593       0/1       Running             0          11s
+...
+test-ase-frontend-1058840217-u23m7       1/1       Running             0          45m
+test-ase-frontend-1058840217-xowiu       0/1       Terminating         0          44m
+test-ase-frontend-1091542682-e9dqu       0/1       ContainerCreating   0          2s
+test-ase-frontend-1091542682-xd593       1/1       Running             0          22s
+...
+test-ase-frontend-1091542682-e9dqu       1/1       Running             0          24s
+test-ase-frontend-1091542682-xd593       1/1       Running             0          44s
+```
+
+---
+# Kubernetes Komponenten
+![:scale 80%](img/k8s2.png "Logo Title Text 1")
+
+---
+#### Container
+
+Ein `Pod` ist eine Zusammenführung mehrerer Container zu einer gemeinsamen Einheit.
+
+Im Normalfall hat ein Pod ein Container.
+
+Ein (docker) Container sollte immer nur ein Prozess ausführen.
+Falls zwei Prozesse sehr dicht beieinander laufen müssen kann man diese in einem Pod laufen lassen.
+
+Innerhalb eines Pod können Container über `localhost` miteinander Kommunizieren und sich Dateisysteme teilen.
+
+---
+#### Cluster
+
+Eine Gruppe von VM (nodes) auf denen kubernetes installiert ist bilden zusamen ein Cluster.
+
+#### Node
+
+Eine VM die u.a. docker images ausführt.
+
+#### Namespace
+
+Zur Strukturierung eines Clusters in mehrere Bereiche. Ein Cluster kann z.B. mehrere Umgebungen ausliefern.
+
+---
 #### Service
 
 Servives Gruppieren Pods und machen sie unter einer gemeinsamen IP:PORT verfügbar. Kubernetes verteilt den Traffic auf die Pods nach Verfügbarkeit über ein RoundRobin Prinzip.
 
 Im Normalfall gibt es eine 1-zu-1 Beziehung zwischen Service und Pod. 
 
-#### Deployment
+---
+### Wie kontrolliert man k8s eigentlich?
 
-Über Deployments stuert man die Menge der zur verfügung gestellten Pods, sowie das automatische Update von Container Versionen.
+YAML
+```yaml
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: raumschilder
+  name: raumschilder
+spec:
+  replicas: 1
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: raumschilder
+    spec:
+      imagePullSecrets:
+        - name: gitlab.neuland-bfi.de
+      containers:
+      - image: gitlab.neuland-bfi.de:5043/stefan.kuper/raumschilder:latest
+        name: nodejs
+        resources: {}
+      restartPolicy: Always
+status: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    app: raumschilder
+  name: raumschilder
+spec:
+  ports:
+  - name: nodejs
+    port: 3000
+  selector:
+    app: raumschilder
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  labels:
+    app: raumschilder
+  name: raumschilder
+  annotations:
+    ingress.kubernetes.io/whitelist-source-range: "10.66.0.0/16,192.168.0.0/16"
+spec:
+  rules:
+  - host: ting.neuland-bfi.de
+    http:
+      paths:
+      - backend:
+          serviceName: raumschilder
+          servicePort: 3000
+        path: /
+```
 
+
+
+---
 #### Init Systeme in Containern
 
 Ein Prozess pro Container, ein Init System sollte vermieden werden. _Zombie Reaper_ übernimmt Kubernetes.
@@ -78,6 +196,8 @@ Shared PID Space im Pod. Shared Ports aller Container im Pod, benachbarte Contai
 Können auf Pod und/oder Namespace Ebene Definiert werden.
 
 Linux `cgroups`. CPU wird _soft_ limitiert, Memory wird _hard_ per OOM-Killer limitiert.
+
+---
 
 #### Service Discovery
 
@@ -108,7 +228,13 @@ Cloud Provider können Blocstorage in AWS/Azure/Openstack/VMWare etc, alternativ
 ---
 # Redundante Systeme / Replicas
 
+#### Affinity
+
+Pods werden möglichst so verteilt, das auf einem Host nie 2 gleichzeitig laufen.
+
 #### Readyness / Liveness Probes
+
+An die Container eines Pod wird ein Monitoring (Liveness, Readyness) konfigiert, mit der der Zustand und die Verfügbarkeit überwacht wird.
 
 Der _Readyness_ Probe definiert ob der Pod Traffic bekommt, _Liveness_ wird benutzt um festzustellen ob ein Service funktionert.
 
@@ -244,6 +370,10 @@ Cheat-sheet: https://kubernetes.io/docs/reference/kubectl/cheatsheet/
     <script src="https://remarkjs.com/downloads/remark-latest.min.js" type="text/javascript">
     </script>
     <script type="text/javascript">
+      remark.macros.scale = function (percentage) {
+        var url = this;
+        return '<img src="' + url + '" style="width: ' + percentage + '" />';
+      };
       var slideshow = remark.create();
     </script>
   </body>
