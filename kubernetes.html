@@ -24,8 +24,9 @@ class: left, middle
 # Agenda
 
 1. Vortrag: Einführung in k8s
-2. Hands-On
-3. Fragerunde
+2. Fragerunde
+3. Hands-On
+4. Mehr Fragen
 
 ---
 # Was kann kubernetes?
@@ -54,7 +55,9 @@ Ein Pod führt ein (oder mehrere) docker images aus.
 
 #### Deployment
 
-Über Deployments steuert man die Menge der zur verfügung gestellten Pods, sowie das automatische Update von Container Versionen.
+Über Deployments steuert man die Menge der zur verfügung gestellten Pods, sowie das automatische Update von Container Versionen, und sind normalerweise die primäre Interaktion die man mit Kubernetes hat.
+
+Deployments unterstützen zusätzlich ein Rollback auf vorige versionen.
 
 #### Replica Set
 
@@ -116,10 +119,10 @@ Zur Strukturierung eines Clusters in mehrere Bereiche. Ein Cluster kann z.B. meh
 
 Servives Gruppieren Pods und machen sie unter einer gemeinsamen IP:PORT verfügbar. Kubernetes verteilt den Traffic auf die Pods nach Verfügbarkeit über ein RoundRobin Prinzip.
 
-Im Normalfall gibt es eine 1-zu-1 Beziehung zwischen Service und Pod. 
+Im Normalfall gibt es eine 1-zu-1 Beziehung zwischen Service und Pod.
 
 ---
-### Wie kontrolliert man k8s eigentlich?
+### Wie Konfiguriert man k8s eigentlich?
 
 YAML
 ```yaml
@@ -346,14 +349,22 @@ Konfiguration ähnlich zu einem Deployment, Pods werden aber auf allen Nodes des
 Aufteilung des Cluster in Bereiche für z.B Vertikalen. (Dev/Prod sind idealerweise 2 getrennte Cluster, und nicht Namespaces)
 
 ---
-# kubectl CLI
+# Fragerunde
 
-Installation von https://kubernetes.io/docs/tasks/tools/install-kubectl/. Version sollte ähnlich dem des Cluster sein.
+Jetzt!
+
+---
+# `kubectl`  Installation
+
+Installation von https://kubernetes.io/docs/tasks/tools/install-kubectl/. Mac User mit `brew install kubectl`
 
 Bash Completion:
-
+ ```bash
+ echo "source <(kubectl completion bash)" >> ~/.bashrc
+ ```
+für Mac User:
 ```bash
-echo "source <(kubectl completion bash)" >> ~/.bashrc
+brew install bash-completion
 ```
 
 Kube Configs für Neuland Cluster:
