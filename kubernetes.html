@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>My Awesome Presentation</title>
+    <title>Kubernetes</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <style type="text/css">
       @import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
@@ -29,8 +29,70 @@ class: left, middle
 
 ---
 # Was kann kubernetes? Was kann es nicht?
+
+Kubernetes ist ein Container Orchestrierer, und übernimmt dabei funktionen wie:
+
+ - Deployment, Verfügbarkeit, Resourcen Verwaltung, Kommunikation, Service Discovery
+
 ---
 # Was ist ein Pod, Service, Deployment?
+
+#### Pod
+
+Ein `Pod` ist eine Zusammenführung mehrerer Container zu einer gemeinsamen Einheit.
+
+Innerhalb eines Pod können Container über `localhost` miteinander Kommunizieren und sich Dateisysteme teilen.
+
+Pods werden möglichst so verteilt, das auf einem Host nie 2 gleichzeitig laufen.
+
+An die Container eines Pod wird ein Monitoring (Liveness, Readyness) konfigiert, mit der der Zustand und die Verfügbarkeit überwacht wird.
+
+#### Service
+
+Servives Gruppieren Pods und machen sie unter einer gemeinsamen IP:PORT verfügbar. Kubernetes verteilt den Traffic auf die Pods nach Verfügbarkeit über ein RoundRobin Prinzip.
+
+#### Deployment
+
+Über Deployments stuert man die Menge der zur verfügung gestellten pods, sowie das automatische Update von Container Versionen
+
+#### Init Systeme in Containern
+
+Ein Prozess pro Container, ein Init System sollte vermieden werden. _Zombie Reaper_ übernimmt Kubernetes.
+
+Shared PID Space im Pod. Shared Ports aller Container im Pod, benachbarte Container im Pod können über `localhost` erreicht werden.
+
+#### Memory und CPU Limits
+
+Können auf Pod und/oder Namespace Ebene Definiert werden.
+
+Linux `cgroups`. CPU wird _soft_ limitiert, Memory wird _hard_ per OOM-Killer limitiert.
+
+#### Service Discovery
+
+Kubernetes DNS System stellt diverse Records zum finden von Pods/Services zur verfügung: `<service>.<namespace>.svc.cluster.local`
+
+Im Container über Umgebungsvariable.
+
+---
+#### Logging
+
+Logfiles nicht im Container, immer nach STDOUT und STDERR. Diese können dann mit `kubectl logs` gelesen werden.
+
+Im Cluster sollte es ein Logging System geben das diese Logfiles auf Hostebene (_Daemonset_) einsammelt, und zentral verfügbar macht (z.B: ELK)
+
+#### Storage
+
+Nicht im Container.
+
+Temp Space der mit dem Pod besteht: `emptyDir`, kann von multiplen Containern im Pod genutzt werden, liegt auf dem Host:
+```yaml
+volumes:
+  - name: scratchdir
+    emptyDir: {}
+```
+
+Cloud Provider können Blocstorage in AWS/Azure/Openstack/VMWare etc, alternativ NFS/iSCSI. Blockstorage wandert mit dem Pod, und ist nur von einem Pod benutzbar.
+
 ---
 # Redundante Systeme / Replicas
 
@@ -69,14 +131,101 @@ Simpel: Alle Pods Sterben, bevor neue gestartet werden.
 
 Bei einem Deployment mit z.B 3 Replicas, führ ein `maxUnavailable: 0` und `maxSurge: 3` dazu, das immer erst 3 neue Pods gestartet werden, bevor die alten terminiert werden.
 
-Pipeline: `kubectl rollout status deployment/mein-tolles-deployment -w`
+Pipeline:
+```bash
+kubectl rollout status deployment/mein-tolles-deployment -w
+```
 ---
 # Ingress, ConfigMaps, Secrets, CronJobs
+
+#### Ingress
+
+Ingress ist ein _Reverse Proxy_ verfügbar in diverser Variation (Nginx, Haproxy, Traefik)
+
+`Ingress` kann, anders als ein `Service` auf HTTP *Pfad* ebene Routen:
+
+```yaml
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: raumschilder
+spec:
+  rules:
+  - host: ting.neuland-bfi.de
+    http:
+      paths:
+      - backend:
+          serviceName: raumschilder
+          servicePort: 3000
+        path: /
+        - backend:
+            serviceName: anderer-service
+            servicePort: 3000
+          path: /backend/api
+```
 ---
-# kubernetes config files
+#### ConfigMap
+
+Key/Value Konfiguration die in Pods als Datei oder Umgebungsvariable verfügbar gemacht werden kann.
+
+```yaml
+apiVersion: v1
+data:
+  aws.region: eu-central-1
+  efs-systemid.server.dns-name: fs-0801e451.efs.eu-central-1.amazonaws.com
+  file.system.id: fs-0801e451
+  provisioner.name: example.com/aws-efs
+kind: ConfigMap
+metadata: {}
+```
+
+---
+#### Secret
+
+Funktional Analog zu einer ConfigMap, wird aber vom Cluster anders behandelt. Daten sind `base64` Kodiert:
+
+```yaml
+apiVersion: v1
+data:
+  basic-auth-password: YmxhaGZhc2Vs
+  basic-auth-user: Ymx1YmJlcg==
+kind: Secret
+metadata: {}
+```
+
+Inhalt wird nie auf Disk geschrieben, wird nur an Nodes geschickt die das Secret benötigen. Können im Pod auch wieder als Umgebungsvariable oder Datei verwendet werden.
+---
+#### CronJob
+
+Konfiguration wie ein Deployment, Pod wird nach Unix Cron Definition gestartet.
+
+#### Daemonset
+
+Konfiguration ähnlich zu einem Deployment, Pods werden aber auf allen Nodes des Cluster gestartet.
+
+#### Namespaces
+
+Aufteilung des Cluster in Bereiche für z.B Vertikalen. (Dev/Prod sind idealerweise 2 getrennte Cluster, und nicht Namespaces)
+
 ---
 # kubectl CLI
----
+
+Installation von https://kubernetes.io/docs/tasks/tools/install-kubectl/. Version sollte ähnlich dem des Cluster sein.
+
+Bash Completion:
+
+```bash
+echo "source <(kubectl completion bash)" >> ~/.bashrc
+```
+
+Kube Configs für Neuland Cluster:
+
+https://gitlab.neuland-bfi.de/admins/ansible-neuland-infra/tree/master/roles/kubernetes/users
+
+Datei als `~/.kube/config` ablegen.
+
+Cheat-sheet: https://kubernetes.io/docs/reference/kubectl/cheatsheet/
+
 
 
     </textarea>
