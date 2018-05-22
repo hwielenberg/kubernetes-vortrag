@@ -28,11 +28,17 @@ class: left, middle
 3. Fragerunde
 
 ---
-# Was kann kubernetes? Was kann es nicht?
+# Was kann kubernetes?
 
 Kubernetes ist ein Container Orchestrierer, und übernimmt dabei funktionen wie:
 
  - Deployment, Verfügbarkeit, Resourcen Verwaltung, Kommunikation, Service Discovery
+
+# Was kann es nicht?
+
+- Kubernets baut keine Container. Es kann aber mit einer Vielzahl von Containern Umgehen. -> Docker, rkt, ...
+- Keine Pipeline für Continous Delivery. -> Gitlab, Jenkins, ...
+- Logging, Monitoring. -> ELK-Stack, Grafana, ...
 
 ---
 # Was ist ein Pod, Service, Deployment?
@@ -43,6 +49,10 @@ Ein `Pod` ist eine Zusammenführung mehrerer Container zu einer gemeinsamen Einh
 
 Innerhalb eines Pod können Container über `localhost` miteinander Kommunizieren und sich Dateisysteme teilen.
 
+**TODO Ich würde das erst einmal vereinfachen. Ein pod mit zwei Containern ist ein exotischer Sonderfall**
+
+Auf Ebene der Pods wird in kubernetes redundante Applikationen abgebildet. Sowohl für Lastverteilung, als auch für Ausfallsicherheit.
+
 Pods werden möglichst so verteilt, das auf einem Host nie 2 gleichzeitig laufen.
 
 An die Container eines Pod wird ein Monitoring (Liveness, Readyness) konfigiert, mit der der Zustand und die Verfügbarkeit überwacht wird.
@@ -51,9 +61,11 @@ An die Container eines Pod wird ein Monitoring (Liveness, Readyness) konfigiert,
 
 Servives Gruppieren Pods und machen sie unter einer gemeinsamen IP:PORT verfügbar. Kubernetes verteilt den Traffic auf die Pods nach Verfügbarkeit über ein RoundRobin Prinzip.
 
+Im Normalfall gibt es eine 1-zu-1 Beziehung zwischen Service und Pod. 
+
 #### Deployment
 
-Über Deployments stuert man die Menge der zur verfügung gestellten pods, sowie das automatische Update von Container Versionen
+Über Deployments stuert man die Menge der zur verfügung gestellten Pods, sowie das automatische Update von Container Versionen.
 
 #### Init Systeme in Containern
 
