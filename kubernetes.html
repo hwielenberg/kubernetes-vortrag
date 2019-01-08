@@ -14,6 +14,8 @@
         font-weight: normal;
       }
       .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }
+      .image-scaled img { width: 100%; }
+      .smaller-text .remark-code { font-size: 12px; white-space: pre-wrap; }
     </style>
   </head>
   <body>
@@ -66,7 +68,7 @@ Zwischen Deployment und Pod gibt es die zusätzliche Ebene der Replica Set.
 Jedes Mal wenn es an der k8s config eine Änderung gibt (z.B. neue image Version) wird ein neues Replica Set erzeugt.
 Für die Dauer der Migrationen der Pods auf den neusten Stand hat ein Deployment zwei Replica Sets.
 
-```
+.smaller-text[```
 localhost:~ henning$ kubectl get pods | grep ase-frontend
 
 test-ase-frontend-1058840217-u23m7       1/1       Running             0          44m
@@ -83,7 +85,7 @@ test-ase-frontend-1091542682-xd593       1/1       Running             0        
 ...
 test-ase-frontend-1091542682-e9dqu       1/1       Running             0          24s
 test-ase-frontend-1091542682-xd593       1/1       Running             0          44s
-```
+```]
 
 ---
 # Kubernetes Komponenten
@@ -127,7 +129,7 @@ Im Normalfall gibt es eine 1-zu-1 Beziehung zwischen Service und Pod.
 ### Wie Konfiguriert man k8s eigentlich?
 
 YAML
-```yaml
+.smaller-text[```yaml
 ---
 apiVersion: extensions/v1beta1
 kind: Deployment
@@ -185,8 +187,7 @@ spec:
           serviceName: raumschilder
           servicePort: 3000
         path: /
-```
-
+```]
 
 
 ---
@@ -244,7 +245,7 @@ An die Container eines Pod wird ein Monitoring (Liveness, Readyness) konfigiert,
 Der _Readyness_ Probe definiert ob der Pod Traffic bekommt, _Liveness_ wird benutzt um festzustellen ob ein Service funktionert.
 
 Können HTTP Checks, oder beliebige Scripte die im Container ausgeführt werden sein:
-```yaml
+.smaller-text[```yaml
 readinessProbe:
   httpGet:
     port: 8080
@@ -259,7 +260,7 @@ livenessProbe:
     path: /basic_status
   initialDelaySeconds: 5
   periodSeconds: 3
-```
+```]
 
 ---
 # Deployment Strategien
@@ -287,7 +288,7 @@ Ingress ist ein _Reverse Proxy_ verfügbar in diverser Variation (Nginx, Haproxy
 
 `Ingress` kann, anders als ein `Service` auf HTTP *Pfad* ebene Routen:
 
-```yaml
+.smaller-text[```yaml
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
@@ -305,7 +306,7 @@ spec:
             serviceName: anderer-service
             servicePort: 3000
           path: /backend/api
-```
+```]
 ---
 #### ConfigMap
 
