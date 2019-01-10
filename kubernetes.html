@@ -13,151 +13,386 @@
         font-family: 'Yanone Kaffeesatz';
         font-weight: normal;
       }
+      h1 {
+        text-align: center
+      }
       .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }
+      .remark-slide-content:after {
+    content: "";
+    position: absolute;
+    bottom: 10px;
+    left: 25px;
+    height: 40px;
+    width: 120px;
+    background-repeat: no-repeat;
+    background-size: contain;
+    background-image: url('https://www.neuland-bfi.de/assets/images/neuland.svg');
+}
+.remark-slide-content.img-right-full > p:first-of-type > img {
+  background-color: #eeeeee
+}
     </style>
+    <link rel="stylesheet" type="text/css" href="https://story.xaprb.com/css/apron.css"></style>
   </head>
   <body>
     <textarea id="source">
+
+class: title, smokescreen, shelf, no-footer
+# Einführung in Kubernetes
+
+
+
+![](https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/Kubernetes_logo.svg/250px-Kubernetes_logo.svg.png)
+
+---
 
 class: left, middle
 
 # Agenda
 
-1. Vortrag: Einführung in k8s
-2. Fragerunde
-3. Hands-On
-4. Mehr Fragen
+1. Vortrag: Einführung in kubernetes
+  1. Überblick
+  1. Resourcen
+  1. CLI
+  1. Resourcen II
+  1. Konfiguration
+  1. Resourcen III
+  1. Konfiguration II
+1. Hands-On
+  1. ase-frontend
+  2. vdf
+
+--
+
+Fragen sind jederzeit willkommen
 
 ---
-# Was kann kubernetes?
+# Überblick
+## Was kann kubernetes?
 
 Kubernetes ist ein Container Orchestrierer, und übernimmt dabei funktionen wie:
 
- - Deployment, Verfügbarkeit, Resourcen Verwaltung, Kommunikation, Service Discovery
+ * Deployment
+ * Verfügbarkeit
+ * Resourcen Verwaltung
+ * Kommunikation
+ * Service Discovery
 
-# Was kann es nicht?
+---
+# Überblick
 
-- Kubernets baut keine Container. Es kann aber mit einer Vielzahl von Containern Umgehen. -> Docker, rkt, ...
-- Keine Pipeline für Continous Delivery. -> Gitlab, Jenkins, ...
-- Logging, Monitoring. -> ELK-Stack, Grafana, ...
+## Was kann es nicht?
+
+- Kubernets nutzt Container, aber baut keine. 
+  * Es kann aber mit einer Vielzahl von Containern Umgehen.
+  * Docker, ...
+- Keine Pipeline für Continous Delivery. 
+  * Gitlab, Jenkins, ...
+- Logging, Monitoring. 
+  * ELK-Stack, Grafana, Prometheus, ...
 
 
 ---
-#### Pod
+# Resourcen
+
+Kubernetes ist in viele Komponenten / Resourcen aufgeteilt
+
+Dazu zählen:
+* Pods
+* Deployments
+* Replica Sets
+* Services
+* Secrets
+* Nodes
+* ....
+
+---
+class: img-right-full
+# Resourcen
+## Pod
+
+
+![](img/resources/pods.svg)
 
 Ein Pod ist die kleinste interagierbare Komponente in kubernetes.
 
-Auf Ebene der Pods wird in kubernetes redundante Applikationen abgebildet. Sowohl für Lastverteilung, als auch für Ausfallsicherheit.
+Es repräsentiert eine Applikation bzw. ein<sup>*</sup> docker image.
+Mehrere Pods desselben Typs dienen zur
+* Lastverteilung
+* Ausfallsicherheit
 
-Ein Pod führt ein (oder mehrere) docker images aus.
+<!-- 
+  Auf Ebene der Pods wird in kubernetes redundante Applikationen abgebildet.
+   Sowohl für Lastverteilung, als auch für Ausfallsicherheit.
+
+Ein Pod führt ein (oder mehrere) docker images aus. -->
 
 ---
+class: img-right-full
+# Resourcen
+## Deployment
 
-#### Deployment
+![](img/resources/deployment.svg)
 
-Über Deployments steuert man die Menge der zur verfügung gestellten Pods, sowie das automatische Update von Container Versionen, und sind normalerweise die primäre Interaktion die man mit Kubernetes hat.
+Mehrere Pods desselben Typs werden in Deployments gruppiert.
+Über ein Deployment lässt sich steuern:
+* Wie viele Pods es geben soll
+* Eine neue Applikations Version soll eingespielt werden
+* Und ggf. rollback auf eine alte Version
 
-Deployments unterstützen zusätzlich ein Rollback auf vorige versionen.
+---
+class: img-right-full
+# Resourcen
+## Replica Set
 
-#### Replica Set
+![](img/resources/replicaSet.svg)
 
-Zwischen Deployment und Pod gibt es die zusätzliche Ebene der Replica Set.
+
+Replica Sets werden von k8s zum Ausrollen von Änderungen von Pods erzeugt.
 
 Jedes Mal wenn es an der k8s config eine Änderung gibt (z.B. neue image Version) wird ein neues Replica Set erzeugt.
 Für die Dauer der Migrationen der Pods auf den neusten Stand hat ein Deployment zwei Replica Sets.
 
-```
-localhost:~ henning$ kubectl get pods | grep ase-frontend
+---
+# Ausflug: CLI
 
-test-ase-frontend-1058840217-u23m7       1/1       Running             0          44m
-test-ase-frontend-1058840217-xowiu       1/1       Running             0          44m
-...
-test-ase-frontend-1058840217-u23m7       1/1       Running             0          45m
-test-ase-frontend-1058840217-xowiu       1/1       Running             0          44m
-test-ase-frontend-1091542682-xd593       0/1       Running             0          11s
-...
-test-ase-frontend-1058840217-u23m7       1/1       Running             0          45m
-test-ase-frontend-1058840217-xowiu       0/1       Terminating         0          44m
-test-ase-frontend-1091542682-e9dqu       0/1       ContainerCreating   0          2s
-test-ase-frontend-1091542682-xd593       1/1       Running             0          22s
-...
-test-ase-frontend-1091542682-e9dqu       1/1       Running             0          24s
-test-ase-frontend-1091542682-xd593       1/1       Running             0          44s
+## Wie interagiere ich mit k8s?
+
+--
+
+`kubectl`
+
+--
+
+```
+  get         Display one or many resources
+  create      Create a resource from a file or from stdin.
+  describe    Show details of a specific resource or group of resources
+  logs        Print the logs for a container in a pod
+  ...
+```
+
+<!-- Zwischen Deployment und Pod gibt es die zusätzliche Ebene der Replica Set. -->
+
+---
+
+```
+10:00:00 henning:~$ kubectl get pods -l name=frontend
+
+frontend-1058840217-u23m7       1/1   Running             44m
+frontend-1058840217-xowiu       1/1   Running             44m
+```
+
+--
+Was bedeutet der Name vom Pod?
+
+<table>
+  <tr>
+    <td style="padding-right:100px"><span><code>frontend</code></span></td>
+    <td style="padding-right:100px">Deployment</td>
+    <td><small>Definieren wir</small></td>
+  </tr>
+  <tr>
+    <td style="padding-right:100px"><span><code>frontend-1058840217</code></span></td>
+    <td style="padding-right:100px">Replica Set</td>
+    <td><small>Berechnet (Hash)</small></td>
+  </tr>
+  <tr>
+    <td style="padding-right:100px"><span><code>frontend-1058840217-xowiu</code></span></td>
+    <td style="padding-right:100px">Pod</td>
+    <td><small>Zufall</small></td>
+  </tr>
+</table>
+
+---
+
+
+```
+10:00:00 henning:~$ kubectl get pods -l name=frontend
+
+frontend-1058840217-u23m7       1/1   Running             44m
+frontend-1058840217-xowiu       1/1   Running             44m
+```
+--
+```
+10:00:00 henning:~$ kubectl replace -f frontend.yaml
+```
+--
+```
+10:00:11 henning:~$ kubectl get pods -l name=frontend
+
+frontend-1058840217-u23m7       1/1   Running             45m
+frontend-1058840217-xowiu       1/1   Running             44m
+frontend-1091542682-xd593       0/1   Running             11s
+```
+---
+```
+10:00:11 henning:~$ kubectl get pods -l name=frontend
+
+frontend-1058840217-u23m7       1/1   Running             45m
+frontend-1058840217-xowiu       1/1   Running             44m
+frontend-1091542682-xd593       0/1   Running             11s
+
+10:00:22 henning:~$ kubectl get pods -l name=frontend
+
+frontend-1058840217-u23m7       1/1   Running             45m
+frontend-1058840217-xowiu       0/1   Terminating         44m
+frontend-1091542682-e9dqu       0/1   ContainerCreating   2s
+frontend-1091542682-xd593       1/1   Running             22s
+```
+---
+```
+10:00:22 henning:~$ kubectl get pods -l name=frontend
+
+frontend-1058840217-u23m7       1/1   Running             45m
+frontend-1058840217-xowiu       0/1   Terminating         44m
+frontend-1091542682-e9dqu       0/1   ContainerCreating   2s
+frontend-1091542682-xd593       1/1   Running             22s
+
+10:00:44 henning:~$ kubectl get pods -l name=frontend
+
+frontend-1091542682-e9dqu       1/1   Running             24s
+frontend-1091542682-xd593       1/1   Running             44s
 ```
 
 ---
-# Kubernetes Komponenten
-![:scale 80%](img/k8s2.png "Logo Title Text 1")
+# CLI
+
+## Pod lifecycle
+
+* <b>Running:</b> Läuft!
+* <b>ContainerCreating:</b> k8s startet gerade das docker image.
+* <b>Terminating:</b> Der Pod wurde gelöscht. k8s entsorgt gerade die Leiche...
+* <b>Error:</b> Der docker Prozess wurde mit einem Fehler beendet. k8s startet das image aber gleich neu!
+* <b>CrashLoopBackOff:</b> Auch bei wiederholten Fehlschlägen gibt k8s nicht auf! Er legt nur mal ne Wartepause ein.
+
+
+<!-- Pending	The Pod has been accepted by the Kubernetes system, but one or more of the Container images has not been created. This includes time before being scheduled as well as time spent downloading images over the network, which could take a while.
+Running	The Pod has been bound to a node, and all of the Containers have been created. At least one Container is still running, or is in the process of starting or restarting.
+Succeeded	All Containers in the Pod have terminated in success, and will not be restarted.
+Failed	All Containers in the Pod have terminated, and at least one Container has terminated in failure. That is, the Container either exited with non-zero status or was terminated by the system.
+Unknown	For some reason the state of the Pod could not be obtained, typically due to an error in communicating with the host of the Pod.
+ -->
 
 ---
-#### Container
+# Resourcen
+## Container
 
-Ein `Pod` ist eine Zusammenführung mehrerer Container zu einer gemeinsamen Einheit.
+Was bedeutet eigentlich das `0/1` ?
+```
+frontend-1058840217-xowiu       0/1   Running
+```
 
-Im Normalfall hat ein Pod ein Container.
+---
+class: img-right-full
+# Resourcen
+## Container
 
-Ein (docker) Container sollte immer nur ein Prozess ausführen.
+![](img/resources/container.svg)
+
+Ein Pod kann mehrere Docker images ausführen. Jedes image läuft in einem eigenen Container.
+
+In der Regel gibt es eine Hauptapplikation und sidecars dazu.
+Die Aufgabe für das sidecar ist z.B.
+* Logging
+* SSL
+
+---
+class: img-right-full
+# Resourcen
+## Container
+
+![](img/resources/container.svg)
+#### Init Systeme in Containern
+
+Ein Prozess pro Container, ein Init System sollte vermieden werden. _Zombie Reaper_ übernimmt Kubernetes.
+
+Shared PID Space im Pod. Shared Ports aller Container im Pod, benachbarte Container im Pod können über `localhost` erreicht werden.
+
+
+<!-- Ein (docker) Container sollte immer nur ein Prozess ausführen.
 Falls zwei Prozesse sehr dicht beieinander laufen müssen kann man diese in einem Pod laufen lassen.
 
-Innerhalb eines Pod können Container über `localhost` miteinander Kommunizieren und sich Dateisysteme teilen.
+Innerhalb eines Pod können Container über `localhost` miteinander Kommunizieren und sich Dateisysteme teilen. -->
+
+<!--
+# Kubernetes Komponenten
+![:scale 80%](img/k8s2.png "Logo Title Text 1") -->
 
 ---
-#### Cluster
+class: img-right-full
+# Resourcen
+## Cluster & Namespace
 
+![](img/resources/namespace.svg)
+
+Die Klammer die alle Ressourcen zusammenhält nennt sich Cluster.
+So gibt es z.B. für jede Umgebung (live, qa, dev, ...) einen Cluster.
+
+Ein Cluster kann in mehrere Namespaces aufgeteilt sein.
+Z.B. Kann jede Vertikale seinen eigenen Namespace haben.
+
+
+---
+class: img-right-full
+# Resourcen
+## Node
+
+![](img/resources/nodes.svg)
+
+Ein Cluster läuft auf meheren VMs.
+Eine VM nennt sich node.
+
+Auf jedem Node ist docker installiert. 
+Hier startet k8s die docker images.
+<!-- 
 Eine Gruppe von VM (nodes) auf denen kubernetes installiert ist bilden zusamen ein Cluster.
+Eine VM die u.a. docker images ausführt. -->
 
-#### Node
-
-Eine VM die u.a. docker images ausführt.
-
-#### Namespace
-
-Zur Strukturierung eines Clusters in mehrere Bereiche. Ein Cluster kann z.B. mehrere Umgebungen ausliefern.
-
-Namespaces sollten idealerweise nicht genutzt werden um `dev` und `prod` Umgebungen zu trennen.
 
 ---
-#### Service
+# Konfiguration
+## Wie Konfiguriert man k8s eigentlich?
 
-Servives Gruppieren Pods und machen sie unter einer gemeinsamen IP:PORT verfügbar. Kubernetes verteilt den Traffic auf die Pods nach Verfügbarkeit über ein RoundRobin Prinzip.
-
-Im Normalfall gibt es eine 1-zu-1 Beziehung zwischen Service und Pod.
-
+--
+```
+10:00:00 henning:~$ kubectl replace -f frontend.yaml
+```
+--
+Mit YAML (oder json) Dateien.
 ---
-### Wie Konfiguriert man k8s eigentlich?
 
-YAML
 ```yaml
----
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  creationTimestamp: null
   labels:
     app: raumschilder
   name: raumschilder
 spec:
   replicas: 1
-  strategy: {}
   template:
     metadata:
-      creationTimestamp: null
       labels:
         app: raumschilder
+```
+---
+```yaml
     spec:
       imagePullSecrets:
         - name: gitlab.neuland-bfi.de
       containers:
-      - image: gitlab.neuland-bfi.de:5043/stefan.kuper/raumschilder:latest
+      - image: gitlab.neuland-bfi.de/raumschilder:latest
         name: nodejs
         resources: {}
       restartPolicy: Always
-status: {}
 ---
+```
+---
+```yaml
 apiVersion: v1
 kind: Service
 metadata:
-  creationTimestamp: null
   labels:
     app: raumschilder
   name: raumschilder
@@ -167,150 +402,52 @@ spec:
     port: 3000
   selector:
     app: raumschilder
----
-apiVersion: extensions/v1beta1
-kind: Ingress
-metadata:
-  labels:
-    app: raumschilder
-  name: raumschilder
-  annotations:
-    ingress.kubernetes.io/whitelist-source-range: "10.66.0.0/16,192.168.0.0/16"
-spec:
-  rules:
-  - host: ting.neuland-bfi.de
-    http:
-      paths:
-      - backend:
-          serviceName: raumschilder
-          servicePort: 3000
-        path: /
 ```
 
 
+---
+class: img-right-full
+# Resourcen
+## Service
+
+![](img/resources/services.svg)
+
+Services gruppieren Pods und machen sie unter einer gemeinsamen IP:PORT verfügbar.
+
+Kubernetes verteilt den Traffic auf die Pods nach Verfügbarkeit über ein RoundRobin Prinzip.
+
+
 
 ---
-#### Init Systeme in Containern
+class: img-right-full
+# Resourcen
+## Service
 
-Ein Prozess pro Container, ein Init System sollte vermieden werden. _Zombie Reaper_ übernimmt Kubernetes.
+![](img/resources/services.svg)
 
-Shared PID Space im Pod. Shared Ports aller Container im Pod, benachbarte Container im Pod können über `localhost` erreicht werden.
+Im Normalfall gibt es eine 1-zu-1 Beziehung zwischen Service und Pod.
 
-#### Memory und CPU Limits
+Kubernetes DNS System stellt diverse Records zum finden von Services zur Verfügung: 
 
-Können auf Pod und/oder Namespace Ebene Definiert werden.
+`<service>.<namespace>.svc.cluster.local`
 
-Linux `cgroups`. CPU wird _soft_ limitiert, Memory wird _hard_ per OOM-Killer limitiert.
-
----
-
-#### Service Discovery
-
-Kubernetes DNS System stellt diverse Records zum finden von Pods/Services zur verfügung: `<service>.<namespace>.svc.cluster.local`
-
-Im Container über Umgebungsvariable.
 
 ---
-#### Logging
+class: img-right-full
+# Resourcen
+## ConfigMap
 
-Logfiles nicht im Container, immer nach STDOUT und STDERR. Diese können dann mit `kubectl logs` gelesen werden.
-
-Im Cluster sollte es ein Logging System geben das diese Logfiles auf Hostebene (_Daemonset_) einsammelt, und zentral verfügbar macht (z.B: ELK)
-
-#### Storage
-
-Nicht im Container.
-
-Temp Space der mit dem Pod besteht: `emptyDir`, kann von multiplen Containern im Pod genutzt werden, liegt auf dem Host:
-```yaml
-volumes:
-  - name: scratchdir
-    emptyDir: {}
-```
-
-Cloud Provider können Blocstorage in AWS/Azure/Openstack/VMWare etc, alternativ NFS/iSCSI. Blockstorage wandert mit dem Pod, und ist nur von einem Pod benutzbar.
-
----
-# Redundante Systeme / Replicas
-
-#### Affinity
-
-Pods werden möglichst so verteilt, das auf einem Host nie 2 gleichzeitig laufen.
-
-#### Readyness / Liveness Probes
-
-An die Container eines Pod wird ein Monitoring (Liveness, Readyness) konfigiert, mit der der Zustand und die Verfügbarkeit überwacht wird.
-
-Der _Readyness_ Probe definiert ob der Pod Traffic bekommt, _Liveness_ wird benutzt um festzustellen ob ein Service funktionert.
-
-Können HTTP Checks, oder beliebige Scripte die im Container ausgeführt werden sein:
-```yaml
-readinessProbe:
-  httpGet:
-    port: 8080
-    scheme: HTTP
-    path: /ready.html
-  initialDelaySeconds: 5 # Gibt der Applikation zeit zu starten
-  periodSeconds: 3 # Prüf Intervall
-livenessProbe:
-  httpGet:
-    port: 8080
-    scheme: HTTP
-    path: /basic_status
-  initialDelaySeconds: 5
-  periodSeconds: 3
-```
-
----
-# Deployment Strategien
-
-#### Recreate
-Simpel: Alle Pods Sterben, bevor neue gestartet werden.
-
-#### Rolling-Update
-"Blue/Green" deployment: neue Pods werden gestartet, warten bis _Readyness_ erfolgt ist, bevor ein alter gelöscht wird.
-
-Über _maxUnavailable_ und _maxSurge_ wird gesteuert Wieviele Pods maximal terminiert werden dürfen, und wieviele maximal zusätzlich gestartet werden können.
-
-Bei einem Deployment mit z.B 3 Replicas, führ ein `maxUnavailable: 0` und `maxSurge: 3` dazu, das immer erst 3 neue Pods gestartet werden, bevor die alten terminiert werden.
-
-Pipeline:
-```bash
-kubectl rollout status deployment/mein-tolles-deployment -w
-```
----
-# Ingress, ConfigMaps, Secrets, CronJobs
-
-#### Ingress
-
-Ingress ist ein _Reverse Proxy_ verfügbar in diverser Variation (Nginx, Haproxy, Traefik)
-
-`Ingress` kann, anders als ein `Service` auf HTTP *Pfad* ebene Routen:
-
-```yaml
-apiVersion: extensions/v1beta1
-kind: Ingress
-metadata:
-  name: raumschilder
-spec:
-  rules:
-  - host: ting.neuland-bfi.de
-    http:
-      paths:
-      - backend:
-          serviceName: raumschilder
-          servicePort: 3000
-        path: /
-        - backend:
-            serviceName: anderer-service
-            servicePort: 3000
-          path: /backend/api
-```
----
-#### ConfigMap
+![](img/resources/utils.svg)
 
 Key/Value Konfiguration die in Pods als Datei oder Umgebungsvariable verfügbar gemacht werden kann.
 
+---
+
+class: img-right-full
+# Resourcen
+## ConfigMap
+
+![](img/resources/utils.svg)
 ```yaml
 apiVersion: v1
 data:
@@ -323,10 +460,17 @@ metadata: {}
 ```
 
 ---
-#### Secret
-
+class: img-right-full
+# Resourcen
+## Secret
+![](img/resources/utils.svg)
 Funktional Analog zu einer ConfigMap, wird aber vom Cluster anders behandelt. Daten sind `base64` Kodiert:
-
+Inhalt wird nie auf Disk geschrieben, wird nur an Nodes geschickt die das Secret benötigen. Können im Pod auch wieder als Umgebungsvariable oder Datei verwendet werden.
+---
+class: img-right-full
+# Resourcen
+## Secret
+![](img/resources/utils.svg)
 ```yaml
 apiVersion: v1
 data:
@@ -336,23 +480,177 @@ kind: Secret
 metadata: {}
 ```
 
-Inhalt wird nie auf Disk geschrieben, wird nur an Nodes geschickt die das Secret benötigen. Können im Pod auch wieder als Umgebungsvariable oder Datei verwendet werden.
 ---
-#### CronJob
+# Konfiguration
+## Memory und CPU Limits
+
+Können auf Pod und/oder Namespace Ebene Definiert werden.
+
+Linux `cgroups`. CPU wird _soft_ limitiert, Memory wird _hard_ per OOM-Killer limitiert.
+
+<!-- ---
+
+#### Service Discovery
+
+
+Im Container über Umgebungsvariable. -->
+
+---
+# Konfiguration
+## Logging
+
+Logfiles nicht im Container, immer nach STDOUT und STDERR. Diese können dann mit `kubectl logs` gelesen werden.
+
+Im Cluster sollte es ein Logging System geben das diese Logfiles auf Hostebene (_Daemonset_) einsammelt, und zentral verfügbar macht (z.B: ELK)
+
+---
+# Konfiguration
+## Storage
+
+Nicht im Container. Da flüchtig.
+
+Cloud Provider können Blocstorage in AWS/Azure/Openstack/VMWare etc, alternativ NFS/iSCSI. 
+
+Blockstorage wandert mit dem Pod, und ist nur von einem Pod benutzbar.
+
+---
+# Konfiguration
+## Storage
+
+Temp Space der mit dem Pod besteht: `emptyDir`, kann von multiplen Containern im Pod genutzt werden, liegt auf dem Host:
+```yaml
+volumes:
+  - name: scratchdir
+    emptyDir: {}
+```
+
+---
+# Konfiguration
+## Affinity
+
+Pods werden möglichst so verteilt, das auf einem Node nie 2 gleichzeitig laufen.
+
+---
+# Konfiguration
+## Readyness / Liveness Probes
+
+An die Container eines Pod wird ein Monitoring (Liveness, Readyness) konfigiert, mit der der Zustand und die Verfügbarkeit überwacht wird.
+
+Der _Readyness_ Probe definiert ob der Pod Traffic bekommt, _Liveness_ wird benutzt um festzustellen ob ein Service funktionert.
+
+---
+# Konfiguration
+## Readyness / Liveness Probes
+
+Können HTTP Checks, oder beliebige Scripte die im Container ausgeführt werden sein:
+```yaml
+    readinessProbe:
+      httpGet:
+        port: 8080
+        scheme: HTTP
+        path: /ready.html
+      initialDelaySeconds: 5 # Gibt der Applikation zeit zu starten
+      periodSeconds: 3 # Prüft Intervall
+```
+
+---
+# Konfiguration
+## Readyness / Liveness Probes
+
+Können HTTP Checks, oder beliebige Scripte die im Container ausgeführt werden sein:
+```yaml
+    livenessProbe:
+      httpGet:
+        port: 8080
+        scheme: HTTP
+        path: /basic_status
+      initialDelaySeconds: 5
+      periodSeconds: 3
+```
+
+
+---
+# Konfiguration
+## Deployment Strategien
+
+#### Recreate
+Simpel: Alle Pods Sterben, bevor neue gestartet werden.
+
+---
+# Konfiguration
+## Deployment Strategien
+
+#### Rolling-Update
+"Blue/Green" deployment: neue Pods werden gestartet, warten bis _Readyness_ erfolgt ist, bevor ein alter gelöscht wird.
+
+Über _maxUnavailable_ und _maxSurge_ wird gesteuert Wieviele Pods maximal terminiert werden dürfen, und wieviele maximal zusätzlich gestartet werden können.
+
+---
+# Konfiguration
+## Deployment Strategien
+#### Rolling-Update
+Bei einem Deployment mit z.B 3 Replicas, führ ein `maxUnavailable: 0` und `maxSurge: 3` dazu, das immer erst 3 neue Pods gestartet werden, bevor die alten terminiert werden.
+
+---
+# Konfiguration
+## Deployment Strategien
+
+Wann ist ein deployment durch?
+
+```bash
+kubectl rollout status deployment/mein-tolles-deployment -w
+```
+
+---
+# Resourcen
+## Ingress
+
+Ingress ist ein _Reverse Proxy_ verfügbar in diverser Variation (Nginx, Haproxy, Traefik)
+
+`Ingress` kann, anders als ein `Service` auf HTTP *Pfad* ebene Routen:
+
+
+---
+# Resourcen
+## Ingress
+```yaml
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: raumschilder
+```
+---
+# Resourcen
+## Ingress
+```yaml
+spec:
+  rules:
+  - host: ting.neuland-bfi.de
+    http:
+      paths:
+      - backend:
+          serviceName: raumschilder
+          servicePort: 3000
+        path: /
+```
+
+---
+# Resourcen
+## CronJob
 
 Konfiguration wie ein Deployment, Pod wird nach Unix Cron Definition gestartet.
 
-#### Daemonset
+---
+# Resourcen
+## Daemonset
 
 Konfiguration ähnlich zu einem Deployment, Pods werden aber auf allen Nodes des Cluster gestartet.
 
 ---
-# Fragerunde
+# Hand On!
+--
 
-Jetzt!
-
----
-# `kubectl`  Installation
+## kubectl Installation
 
 Installation von https://kubernetes.io/docs/tasks/tools/install-kubectl/. Mac User mit `brew install kubectl`
 
@@ -365,16 +663,50 @@ für Mac User:
 brew install bash-completion
 ```
 
+---
+# Hand On!
+
 Kube Configs für Neuland Cluster:
 
 https://gitlab.neuland-bfi.de/admins/ansible-neuland-infra/tree/master/roles/kubernetes/users
 
 Datei als `~/.kube/config` ablegen.
 
+<small>
+bofur  Markus    
+bombur Gerald   
+dain   Patricia   
+dori   Denis   
+durin  Dominic   
+dwalin Sebastian   
+fili   Felix   
+gloin     
+kili      
+</small>
+---
+# Hand On!
+
 Cheat-sheet: https://kubernetes.io/docs/reference/kubectl/cheatsheet/
 
+---
+
+Workshop
 
 
+---
+
+Workshop
+
+---
+
+Kubeconfig anpassen
+
+---
+
+
+<!-- Contribution
+https://github.com/xaprb/story/
+-->
     </textarea>
     <script src="https://remarkjs.com/downloads/remark-latest.min.js" type="text/javascript">
     </script>
@@ -383,7 +715,10 @@ Cheat-sheet: https://kubernetes.io/docs/reference/kubectl/cheatsheet/
         var url = this;
         return '<img src="' + url + '" style="width: ' + percentage + '" />';
       };
-      var slideshow = remark.create();
+      var slideshow = remark.create({
+        ratio: '16:9',
+        countIncrementalSlides: false
+      });
     </script>
   </body>
 </html>
